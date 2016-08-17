@@ -4,6 +4,7 @@ var redis = new (require('ioredis'))(6379)
 var kue = require('kue')
 var request = require('supertest')
 var _ = require('lodash')
+var async = require('async')
 
 describe('Queue', function() {
   var broker = null
@@ -203,7 +204,7 @@ describe('Queue', function() {
     })
   })
 
-  describe('Job Events', function() {
+  describe.only('Job Events', function() {
     var workerNode = workerNode = new Spinal('spinal://127.0.0.1:7557', {
       namespace: 'digger', heartbeat_interval: 500
     })
@@ -237,27 +238,69 @@ describe('Queue', function() {
     })
 
     it('call `onComplete` callback with correct arguments', function(done) {
+      var savedJobId = null
       spinal.start(function() {
         spinal.job('digger.dig')
-        .onComplete(function(result) {
+        .onComplete(function(jobId, result) {
+          expect(jobId).to.equal(savedJobId)
           expect(result).to.eq('ok')
           done()
         })
         .onFailed(function(err) { throw new Error(err) })
-        .save()
+        .save(function(err, jobId) {
+          savedJobId = jobId
+        })
 
       })
     })
 
     it('call `onFailed` callback with correct arguments', function(done) {
+      var savedJobId = null
       spinal.start(function() {
         spinal.job('digger.fail')
-        .onFailed(function(errString) {
+        .onFailed(function(jobId, errString) {
+          expect(jobId).to.equal(savedJobId)
           expect(errString).to.equal('test error string')
           done()
         })
-        .save()
+        .save(function(err, jobId) {
+          savedJobId = jobId
+        })
       })
     })
+
+    it('callback with correct jobIds when multiple jobs were created', function(done) {
+      var savedJobId1, savedJobId2, jobId1, jobId2
+      spinal.start(function() {
+        async.parallel([
+          function(callback) {
+            spinal.job('digger.dig')
+            .onComplete(function(jobId, result) {
+              jobId1 = jobId
+              callback()
+            })
+            .save(function(err, jobId) {
+              savedJobId1 = jobId
+            })
+          },
+          function(callback) {
+            spinal.job('digger.dig')
+            .onComplete(function(jobId, result) {
+              jobId2 = jobId
+              callback()
+            })
+            .save(function(err, jobId) {
+              savedJobId2 = jobId
+            })
+          }
+        ], function(err, results) {
+            expect(err).to.be.null
+            expect(savedJobId1).to.eq(jobId1)
+            expect(savedJobId2).to.eq(jobId2)
+            done()
+        })
+      })
+    })
+
   })
 })

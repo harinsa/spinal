@@ -148,8 +148,8 @@ spinalB.job('newsletter.send', {email: 'some@one.com'})
 .ttl(10000)                  // timeout in 10s
 .delay(5000)                 // before start delay for 5s
 .backoff(10000)              // after fail retry again in 10s
-.onComplete(function(result) { console.log(result) }) // callback when job is done
-.onFailed(function(err) { console.log(err) })         // callback when job failed
+.onComplete(function(jobId, result) { console.log(result) }) // callback when job is done
+.onFailed(function(jobId, err) { console.log(err) })         // callback when job failed
 .save(function(err, job_id){ // don't forget to call save()
   console.log('Created ' + job_id);
 });
