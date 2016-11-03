@@ -150,8 +150,8 @@ spinalB.job('newsletter.send', {email: 'some@one.com'})
 .backoff(10000)              // after fail retry again in 10s
 .onComplete(function(jobId, result) { console.log(result) }) // callback when job is done
 .onFailed(function(jobId, err) { console.log(err) })         // callback when job failed
-.save(function(err, job_id){ // don't forget to call save()
-  console.log('Created ' + job_id);
+.save(function(err, jobId){ // don't forget to call save()
+  console.log('Created ' + jobId);
 });
 ```
 
